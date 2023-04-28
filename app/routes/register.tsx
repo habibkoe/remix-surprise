@@ -1,13 +1,19 @@
-import type { ActionFunction, V2_MetaFunction} from "@remix-run/node";
+import type { ActionFunction, V2_MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Link } from "@remix-run/react";
+import { Link, useActionData } from "@remix-run/react";
 import React, { useState } from "react";
 import Button from "~/components/Forms/Button";
 import Input from "~/components/Forms/Input";
 import Layout from "~/components/Layouts/layout";
 import Heading from "~/components/Typography/Heading";
 import { register } from "~/utils/auth.server";
-import { validateConfirmPassword, validateEmail, validateName, validatePassword, validatePhone } from "~/utils/validators.server";
+import {
+  validateConfirmPassword,
+  validateEmail,
+  validateName,
+  validatePassword,
+  validatePhone,
+} from "~/utils/validators.server";
 
 export const meta: V2_MetaFunction = () => [
   { title: "Register" },
@@ -42,21 +48,36 @@ export const action: ActionFunction = async ({ request }) => {
     password: validatePassword(password),
     fullName: validateName(fullName),
     phone: validatePhone(phone),
-    confirmPassword: validateConfirmPassword(password, confirmPassword)
+    confirmPassword: validateConfirmPassword(password, confirmPassword),
   };
 
   if (Object.values(errors).some(Boolean))
     return json(
-      { errors, fields: { email, password }, form: action },
+      {
+        errors,
+        fields: { email, fullName, phone, confirmPassword },
+        form: action,
+      },
       { status: 400 }
     );
 
   if (action == "register") {
-    return await register({ email, password, fullName, phone, confirmPassword });
+    return await register({
+      email,
+      password,
+      fullName,
+      phone,
+      confirmPassword,
+    });
   }
 };
 
 const RegisterPage = () => {
+  const actionData = useActionData();
+
+  const [formError, setFormError] = useState(actionData?.error || "");
+  const [errors, setErrors] = useState(actionData?.errors || {});
+
   const [formData, setformData] = useState({
     email: "",
     password: "",
@@ -65,10 +86,13 @@ const RegisterPage = () => {
     confirmPassword: "",
   });
 
-  const handleInputChange = (params: any, field: string) => {
+  const handleInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    field: string
+  ) => {
     setformData((form) => ({
       ...form,
-      [field]: params,
+      [field]: event.target.value,
     }));
   };
 
@@ -88,6 +112,9 @@ const RegisterPage = () => {
             value="Welcome to our site"
           />
           <form method="post">
+            <div className="w-full text-xs font-semibold tracking-wide text-center text-red-500">
+              {formError}
+            </div>
             <Input
               fieldIdentity="email"
               className="my-2 text-white"
@@ -96,9 +123,8 @@ const RegisterPage = () => {
               type="email"
               placeholder="Your email here.."
               value={formData.email}
-              onChange={(event) =>
-                handleInputChange(event.target.value, "email")
-              }
+              onChange={(event) => handleInputChange(event, "email")}
+              error={errors?.email}
             />
             <Input
               fieldIdentity="password"
@@ -108,9 +134,7 @@ const RegisterPage = () => {
               type="password"
               placeholder="Your password here.."
               value={formData.password}
-              onChange={(event) =>
-                handleInputChange(event.target.value, "password")
-              }
+              onChange={(event) => handleInputChange(event, "password")}
             />
             <Input
               fieldIdentity="confirmPassword"
@@ -120,9 +144,8 @@ const RegisterPage = () => {
               type="password"
               placeholder="Your confirm password here.."
               value={formData.confirmPassword}
-              onChange={(event) =>
-                handleInputChange(event.target.value, "confirmPassword")
-              }
+              onChange={(event) => handleInputChange(event, "confirmPassword")}
+              error={errors?.confirmPassword}
             />
             <Input
               fieldIdentity="fullName"
@@ -132,9 +155,8 @@ const RegisterPage = () => {
               type="text"
               placeholder="Your full name here.."
               value={formData.fullName}
-              onChange={(event) =>
-                handleInputChange(event.target.value, "fullName")
-              }
+              onChange={(event) => handleInputChange(event, "fullName")}
+              error={errors?.fullName}
             />
             <Input
               fieldIdentity="phone"
@@ -144,11 +166,17 @@ const RegisterPage = () => {
               type="text"
               placeholder="Your phone number here.."
               value={formData.phone}
-              onChange={(event) =>
-                handleInputChange(event.target.value, "phone")
-              }
+              onChange={(event) => handleInputChange(event, "phone")}
+              error={errors?.phone}
             />
-            <Button name="_action" value="register" type="submit" className="my-5 text-white bg-blue-500">Register</Button>
+            <Button
+              name="_action"
+              value="register"
+              type="submit"
+              className="my-5 text-white bg-blue-500"
+            >
+              Register
+            </Button>
           </form>
         </div>
       </div>
