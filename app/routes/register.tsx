@@ -1,10 +1,13 @@
-import type { V2_MetaFunction } from "@remix-run/node";
+import type { ActionFunction, V2_MetaFunction} from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Link } from "@remix-run/react";
 import React, { useState } from "react";
 import Button from "~/components/Forms/Button";
 import Input from "~/components/Forms/Input";
 import Layout from "~/components/Layouts/layout";
 import Heading from "~/components/Typography/Heading";
+import { register } from "~/utils/auth.server";
+import { validateConfirmPassword, validateEmail, validateName, validatePassword, validatePhone } from "~/utils/validators.server";
 
 export const meta: V2_MetaFunction = () => [
   { title: "Register" },
@@ -13,6 +16,45 @@ export const meta: V2_MetaFunction = () => [
     content: "Register to our website",
   },
 ];
+
+export const action: ActionFunction = async ({ request }) => {
+  const form = await request.formData();
+  const action = form.get("_action");
+  const email = form.get("email");
+  const fullName = form.get("fullName");
+  const phone = form.get("phone");
+  const password = form.get("password");
+  const confirmPassword = form.get("confirmPassword");
+
+  if (
+    typeof action !== "string" ||
+    typeof email !== "string" ||
+    typeof password !== "string" ||
+    typeof fullName !== "string" ||
+    typeof phone !== "string" ||
+    typeof confirmPassword !== "string"
+  ) {
+    return json({ error: "Invalid Form Data", form: action }, { status: 400 });
+  }
+
+  const errors = {
+    email: validateEmail(email),
+    password: validatePassword(password),
+    fullName: validateName(fullName),
+    phone: validatePhone(phone),
+    confirmPassword: validateConfirmPassword(password, confirmPassword)
+  };
+
+  if (Object.values(errors).some(Boolean))
+    return json(
+      { errors, fields: { email, password }, form: action },
+      { status: 400 }
+    );
+
+  if (action == "register") {
+    return await register({ email, password, fullName, phone, confirmPassword });
+  }
+};
 
 const RegisterPage = () => {
   const [formData, setformData] = useState({
@@ -33,7 +75,9 @@ const RegisterPage = () => {
   return (
     <Layout>
       <div className="absolute top-8 right-8">
-        <Link to="/login" className="text-white hover:text-gray-400">Already member</Link>
+        <Link to="/login" className="text-white hover:text-gray-400">
+          Already member
+        </Link>
       </div>
 
       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -43,7 +87,7 @@ const RegisterPage = () => {
             className="text-lg font-semibold text-center text-white"
             value="Welcome to our site"
           />
-          <form>
+          <form method="post">
             <Input
               fieldIdentity="email"
               className="my-2 text-white"
@@ -104,7 +148,7 @@ const RegisterPage = () => {
                 handleInputChange(event.target.value, "phone")
               }
             />
-            <Button className="my-5 text-white bg-blue-500">Register</Button>
+            <Button name="_action" value="register" type="submit" className="my-5 text-white bg-blue-500">Register</Button>
           </form>
         </div>
       </div>

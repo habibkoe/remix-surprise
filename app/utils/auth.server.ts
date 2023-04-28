@@ -35,7 +35,7 @@ export const register = async (form: RegisterForm) => {
     );
   }
 
-  if (form.password !== form.passwordConfirm) {
+  if (form.password !== form.confirmPassword) {
     return json(
       {
         error: "Password not match",
@@ -51,7 +51,7 @@ export const register = async (form: RegisterForm) => {
   if (!newUser) {
     return json(
       {
-        error: "something wnet wrong",
+        error: "something went wrong",
         fields: { email: form.email, password: form.password },
       },
       {

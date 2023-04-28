@@ -3,7 +3,7 @@ export interface RegisterForm {
     password: string;
     fullName: string;
     phone: string;
-    passwordConfirm: string;
+    confirmPassword: string;
     
 }
 

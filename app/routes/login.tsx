@@ -1,10 +1,14 @@
-import type { V2_MetaFunction } from "@remix-run/node";
+import type { ActionFunction, V2_MetaFunction} from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Link } from "@remix-run/react";
 import React, { useState } from "react";
 import Button from "~/components/Forms/Button";
 import Input from "~/components/Forms/Input";
 import Layout from "~/components/Layouts/layout";
 import Heading from "~/components/Typography/Heading";
+import { login } from "~/utils/auth.server";
+import { validateEmail, validatePassword } from "~/utils/validators.server";
+
 
 export const meta: V2_MetaFunction = () => [
   { title: "Login" },
@@ -13,6 +17,32 @@ export const meta: V2_MetaFunction = () => [
     content: "Login to our website",
   },
 ];
+
+export const action: ActionFunction = async ({request}) => {
+
+  const form = await request.formData()
+  const action = form.get("_action")
+  const email = form.get("email")
+  const password = form.get("password")
+
+  if(typeof action !== "string" || typeof email !== "string" || typeof password !== "string") {
+    return json({error: 'Invalid Form Data', form: action}, {status: 400})
+  }
+
+  const errors = {
+    email: validateEmail(email),
+    password: validatePassword(password)
+  }
+
+  if(Object.values(errors).some(Boolean))
+    return json({errors, fields: {email, password}, form: action}, {status: 400})
+
+  
+  if(action == "login") {
+    return await login({email, password})
+  }
+  
+}
 
 const LoginPage = () => {
   const [formData, setformData] = useState({
@@ -40,7 +70,7 @@ const LoginPage = () => {
             className="text-lg font-semibold text-center text-white"
             value="Welcome to our site"
           />
-          <form>
+          <form method="post">
             <Input
               fieldIdentity="email"
               className="my-2 text-white"
@@ -66,7 +96,7 @@ const LoginPage = () => {
               }
             />
 
-            <Button className="my-5 text-white bg-blue-500">Log In</Button>
+            <Button name="_action" value="login" type="submit" className="my-5 text-white bg-blue-500">Log In</Button>
           </form>
         </div>
       </div>
